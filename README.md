@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![PySide6](https://img.shields.io/badge/PySide6-6.7%2B-41CD52?style=flat-square&logo=qt&logoColor=white)](https://doc.qt.io/qtforpython/)
-[![Tests](https://img.shields.io/badge/tests-11%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/tests-12%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
 [![Ruff](https://img.shields.io/badge/lint-Ruff-D7FF64?style=flat-square)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/shinjh0380/please-no-smoking?style=flat-square&logo=github)](https://github.com/shinjh0380/please-no-smoking/releases/latest)
@@ -17,11 +17,11 @@
 
 ## 소개
 
-**Please No Smoking**은 금연을 시작한 날짜를 기록하고, 지금까지 얼마나 많은 담배와 돈을 아꼈는지 한눈에 보여주는 가벼운 데스크톱 앱입니다.
+**Please No Smoking**은 금연을 시작한 날짜를 기록하고, 항상 화면에 떠 있는 오버레이 창으로 금연 n일차를 보여주는 가벼운 데스크톱 앱입니다.
 
-- 금연 경과 일수를 알려줍니다
-- 피우지 않은 담배 개비 수를 계산합니다
-- 절약한 금액을 원화로 표시합니다
+- "금연 시작" 버튼 한 번으로 오버레이 창 실행
+- 검은 배경에 흰 글씨로 금연 경과 일수를 크게 표시
+- 항상 최상위(Always on Top) 창으로 유지
 - 설치 없이 실행 파일 하나로 사용할 수 있습니다
 
 ---
@@ -32,7 +32,10 @@
 |------|------|
 | 금연 시작일 선택 | 달력 팝업으로 날짜 입력, 미래 날짜 입력 차단 |
 | 흡연량 설정 | 하루 흡연량(개비), 갑당 가격, 갑당 개비 수 |
-| 즉시 계산 | 경과 일수, 절약 개비, 절약 갑, 절약 금액 |
+| 금연 n일차 오버레이 | "금연 시작" 클릭 시 검은 배경/흰 글씨 오버레이 창 표시 |
+| Always on Top | 오버레이 창이 다른 창 위에 항상 표시 |
+| 드래그 이동 / 리사이즈 | 오버레이 창을 마우스로 이동하고 크기 조절 가능 |
+| 설정 복귀 | 우클릭 → 설정으로 돌아가기 / 종료 |
 | 입력 검증 | 미래 날짜·0 이하 값 입력 시 오류 메시지 표시 |
 
 ---
@@ -48,7 +51,7 @@
 또는 직접 링크:
 
 ```
-https://github.com/shinjh0380/please-no-smoking/releases/download/v0.1.0/please-no-smoking-v0.1.0-windows-x64.zip
+https://github.com/shinjh0380/please-no-smoking/releases/download/v0.2.0/please-no-smoking-v0.2.0-windows-x64.zip
 ```
 
 ### 2단계 — 압축 해제
@@ -181,19 +184,21 @@ app/models.py          (데이터 모델)
 ## 테스트
 
 ```
-tests/test_quit_tracker.py   6개 케이스
+tests/test_quit_tracker.py   8개 케이스
   - 10일 경과 정상 계산
   - 당일 시작 (경과 0일)
   - 미래 날짜 → ValueError
   - 흡연량 0 이하 → ValueError
+  - 음수 흡연량 → ValueError
   - 가격 0 이하 → ValueError
   - 갑당 개비 수 0 이하 → ValueError
+  - 유효 입력 반환 확인
 
-tests/test_window.py         5개 케이스
+tests/test_window.py         4개 케이스
   - 윈도우 정상 생성
-  - 계산 버튼 클릭 후 결과 라벨 표시
-  - 상태 메시지 표시 확인
-  - ...
+  - "금연 시작" 클릭 후 오버레이 창 표시 및 경과일 확인
+  - 미래 날짜 입력 시 오류 메시지 표시
+  - 상태 메시지 초기값 확인
 ```
 
 ```bash

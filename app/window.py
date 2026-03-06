@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from datetime import date
 
-from PySide6.QtCore import QDate, Qt
+from PySide6.QtCore import QDate, QPoint, Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
+    QApplication,
     QDateEdit,
     QFormLayout,
+    QHBoxLayout,
     QLabel,
     QMainWindow,
     QPushButton,
+    QSizeGrip,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -16,6 +20,74 @@ from PySide6.QtWidgets import (
 
 from app.models import SmokingInput
 from app.services.quit_tracker import calculate_stats, validate_input
+
+
+class OverlayWindow(QWidget):
+    def __init__(self, days_quit: int, main_window: MainWindow) -> None:
+        super().__init__()
+        self._main_window = main_window
+        self._drag_pos: QPoint | None = None
+
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setStyleSheet("background-color: black;")
+        self.resize(320, 180)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._show_context_menu)
+
+        self._label = QLabel(f"금연 {days_quit}일차")
+        self._label.setObjectName("overlay_label")
+        self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._label.setStyleSheet("color: white; font-size: 48px; font-weight: bold;")
+
+        size_grip = QSizeGrip(self)
+
+        bottom_row = QHBoxLayout()
+        bottom_row.addStretch()
+        bottom_row.addWidget(size_grip)
+        bottom_row.setContentsMargins(0, 0, 0, 0)
+
+        root = QVBoxLayout(self)
+        root.addWidget(self._label)
+        root.addLayout(bottom_row)
+        root.setContentsMargins(12, 12, 4, 4)
+
+    def _show_context_menu(self, pos: QPoint) -> None:
+        from PySide6.QtWidgets import QMenu
+
+        menu = QMenu(self)
+        act_back = QAction("설정으로 돌아가기", self)
+        act_quit = QAction("종료", self)
+        menu.addAction(act_back)
+        menu.addAction(act_quit)
+
+        act_back.triggered.connect(self._go_back)
+        act_quit.triggered.connect(QApplication.quit)
+
+        menu.exec(self.mapToGlobal(pos))
+
+    def _go_back(self) -> None:
+        self._main_window.show()
+        self.close()
+
+    def mousePressEvent(self, event) -> None:  # type: ignore[override]
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._drag_pos = (
+                event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            )
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event) -> None:  # type: ignore[override]
+        if self._drag_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            self.move(event.globalPosition().toPoint() - self._drag_pos)
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:  # type: ignore[override]
+        self._drag_pos = None
+        super().mouseReleaseEvent(event)
 
 
 class MainWindow(QMainWindow):
@@ -53,21 +125,8 @@ class MainWindow(QMainWindow):
         self.spin_per_pack.setRange(1, 100)
         self.spin_per_pack.setValue(20)
 
-        self.btn_calculate = QPushButton("계산하기")
-        self.btn_calculate.setObjectName("btn_calculate")
-
-        # --- results ---
-        self.lbl_days = QLabel("-")
-        self.lbl_days.setObjectName("lbl_days")
-
-        self.lbl_cigarettes = QLabel("-")
-        self.lbl_cigarettes.setObjectName("lbl_cigarettes")
-
-        self.lbl_packs = QLabel("-")
-        self.lbl_packs.setObjectName("lbl_packs")
-
-        self.lbl_money = QLabel("-")
-        self.lbl_money.setObjectName("lbl_money")
+        self.btn_start = QPushButton("금연 시작")
+        self.btn_start.setObjectName("btn_start")
 
         self.lbl_status = QLabel("")
         self.lbl_status.setObjectName("lbl_status")
@@ -80,22 +139,15 @@ class MainWindow(QMainWindow):
         form.addRow("갑당 가격 (원)", self.spin_price)
         form.addRow("갑당 개비 수", self.spin_per_pack)
 
-        result_form = QFormLayout()
-        result_form.addRow("경과 일수", self.lbl_days)
-        result_form.addRow("절약한 개비", self.lbl_cigarettes)
-        result_form.addRow("절약한 갑", self.lbl_packs)
-        result_form.addRow("절약한 금액 (원)", self.lbl_money)
-
         root = QVBoxLayout(central)
         root.addLayout(form)
-        root.addWidget(self.btn_calculate)
-        root.addLayout(result_form)
+        root.addWidget(self.btn_start)
         root.addWidget(self.lbl_status)
 
     def _connect_signals(self) -> None:
-        self.btn_calculate.clicked.connect(self._on_calculate)
+        self.btn_start.clicked.connect(self._on_start)
 
-    def _on_calculate(self) -> None:
+    def _on_start(self) -> None:
         qdate = self.date_edit.date()
         quit_date = date(qdate.year(), qdate.month(), qdate.day())
 
@@ -114,8 +166,6 @@ class MainWindow(QMainWindow):
 
         stats = calculate_stats(validated)
 
-        self.lbl_days.setText(f"{stats.days_quit}일")
-        self.lbl_cigarettes.setText(f"{stats.cigarettes_avoided}개비")
-        self.lbl_packs.setText(f"{stats.packs_avoided:.2f}갑")
-        self.lbl_money.setText(f"{stats.money_saved:,}원")
-        self.lbl_status.setText("계산 완료")
+        self._overlay = OverlayWindow(days_quit=stats.days_quit, main_window=self)
+        self._overlay.show()
+        self.hide()

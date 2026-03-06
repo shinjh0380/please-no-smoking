@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import QDateEdit, QLabel, QPushButton, QSpinBox
 
-from app.window import MainWindow
+from app.window import MainWindow, OverlayWindow
 
 
 class TestMainWindow:
@@ -14,12 +14,9 @@ class TestMainWindow:
         qtbot.addWidget(window)
         assert window is not None
 
-    def test_calculate_shows_results(self, qtbot):
+    def test_start_opens_overlay(self, qtbot):
         window = MainWindow()
         qtbot.addWidget(window)
-
-        # 금연 시작일: 10일 전
-        from datetime import timedelta
 
         quit_date = date.today() - timedelta(days=10)
         qdate = QDate(quit_date.year, quit_date.month, quit_date.day)
@@ -30,15 +27,37 @@ class TestMainWindow:
         window.findChild(QSpinBox, "spin_per_pack").setValue(20)
 
         qtbot.mouseClick(
-            window.findChild(QPushButton, "btn_calculate"),
+            window.findChild(QPushButton, "btn_start"),
             Qt.MouseButton.LeftButton,
         )
 
-        lbl_days = window.findChild(QLabel, "lbl_days")
-        lbl_status = window.findChild(QLabel, "lbl_status")
+        overlay = window._overlay
+        qtbot.addWidget(overlay)
 
-        assert lbl_days.text() == "10일"
-        assert lbl_status.text() == "계산 완료"
+        assert isinstance(overlay, OverlayWindow)
+        assert overlay.isVisible()
+        assert not window.isVisible()
+        assert overlay.findChild(QLabel, "overlay_label").text() == "금연 10일차"
+
+    def test_future_date_shows_error(self, qtbot):
+        window = MainWindow()
+        qtbot.addWidget(window)
+
+        future_date = date.today() + timedelta(days=1)
+        qdate = QDate(future_date.year, future_date.month, future_date.day)
+        window.findChild(QDateEdit, "date_edit").setMaximumDate(
+            QDate(9999, 12, 31)
+        )
+        window.findChild(QDateEdit, "date_edit").setDate(qdate)
+
+        qtbot.mouseClick(
+            window.findChild(QPushButton, "btn_start"),
+            Qt.MouseButton.LeftButton,
+        )
+
+        lbl_status = window.findChild(QLabel, "lbl_status")
+        assert "오류" in lbl_status.text()
+        assert not hasattr(window, "_overlay")
 
     def test_status_label_shown(self, qtbot):
         window = MainWindow()
