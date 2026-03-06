@@ -23,7 +23,7 @@ description: Pre-release checklist for packaging the please-no-smoking desktop a
 
 4. **PyInstaller onedir build**
    ```bash
-   uv run pyinstaller --onedir app/main.py --name please-no-smoking --clean
+   uv run pyinstaller --onedir --windowed app/main.py --name please-no-smoking --clean
    ```
    - Inspect `dist/please-no-smoking/` for the executable.
    - Run the executable manually to confirm the window opens.

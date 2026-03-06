@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![PySide6](https://img.shields.io/badge/PySide6-6.7%2B-41CD52?style=flat-square&logo=qt&logoColor=white)](https://doc.qt.io/qtforpython/)
-[![Tests](https://img.shields.io/badge/tests-20%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/tests-21%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
 [![Ruff](https://img.shields.io/badge/lint-Ruff-D7FF64?style=flat-square)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/shinjh0380/please-no-smoking?style=flat-square&logo=github)](https://github.com/shinjh0380/please-no-smoking/releases/latest)
@@ -221,6 +221,9 @@ tests/test_persistence.py    8개 케이스
   - geometry 파일 없을 때 None 반환
   - 손상된 geometry JSON 처리
   - geometry 저장 경로 격리 (tmp_path 사용)
+
+tests/test_packaging.py      1개 케이스
+  - spec 파일 console=False 검증 (콘솔창 회귀 방지)
 ```
 
 ```bash
