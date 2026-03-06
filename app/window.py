@@ -18,12 +18,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.models import SmokingInput
+from app.models import SmokingInput, SmokingStats
+from app.services.persistence import save_input
 from app.services.quit_tracker import calculate_stats, validate_input
 
 
 class OverlayWindow(QWidget):
-    def __init__(self, days_quit: int, main_window: MainWindow) -> None:
+    def __init__(self, stats: SmokingStats, main_window: MainWindow) -> None:
         super().__init__()
         self._main_window = main_window
         self._drag_pos: QPoint | None = None
@@ -34,14 +35,25 @@ class OverlayWindow(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet("background-color: black;")
-        self.resize(320, 180)
+        self.resize(320, 240)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
 
-        self._label = QLabel(f"금연 {days_quit}일차")
+        self._label = QLabel(f"금연 {stats.days_quit}일차")
         self._label.setObjectName("overlay_label")
         self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._label.setStyleSheet("color: white; font-size: 48px; font-weight: bold;")
+
+        self._label_money = QLabel(f"\U0001f4b0 {stats.money_saved:,}원 절약")
+        self._label_money.setObjectName("overlay_label_money")
+        self._label_money.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._label_money.setStyleSheet("color: white; font-size: 18px;")
+
+        cigs_text = f"\U0001f6ac {stats.cigarettes_avoided:,}개비 안 피움"
+        self._label_cigs = QLabel(cigs_text)
+        self._label_cigs.setObjectName("overlay_label_cigs")
+        self._label_cigs.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._label_cigs.setStyleSheet("color: white; font-size: 18px;")
 
         size_grip = QSizeGrip(self)
 
@@ -52,6 +64,8 @@ class OverlayWindow(QWidget):
 
         root = QVBoxLayout(self)
         root.addWidget(self._label)
+        root.addWidget(self._label_money)
+        root.addWidget(self._label_cigs)
         root.addLayout(bottom_row)
         root.setContentsMargins(12, 12, 4, 4)
 
@@ -59,6 +73,16 @@ class OverlayWindow(QWidget):
         from PySide6.QtWidgets import QMenu
 
         menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #2b2b2b;
+                color: white;
+                border: 1px solid #555;
+            }
+            QMenu::item:selected {
+                background-color: #4a4a4a;
+            }
+        """)
         act_back = QAction("설정으로 돌아가기", self)
         act_quit = QAction("종료", self)
         menu.addAction(act_back)
@@ -164,8 +188,9 @@ class MainWindow(QMainWindow):
             self.lbl_status.setText(f"오류: {exc}")
             return
 
+        save_input(validated)
         stats = calculate_stats(validated)
 
-        self._overlay = OverlayWindow(days_quit=stats.days_quit, main_window=self)
+        self._overlay = OverlayWindow(stats=stats, main_window=self)
         self._overlay.show()
         self.hide()

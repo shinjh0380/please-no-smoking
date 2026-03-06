@@ -14,7 +14,9 @@ class TestMainWindow:
         qtbot.addWidget(window)
         assert window is not None
 
-    def test_start_opens_overlay(self, qtbot):
+    def test_start_opens_overlay(self, qtbot, monkeypatch):
+        monkeypatch.setattr("app.window.save_input", lambda x: None)
+
         window = MainWindow()
         qtbot.addWidget(window)
 
