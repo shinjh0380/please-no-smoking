@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![PySide6](https://img.shields.io/badge/PySide6-6.7%2B-41CD52?style=flat-square&logo=qt&logoColor=white)](https://doc.qt.io/qtforpython/)
-[![Tests](https://img.shields.io/badge/tests-12%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/tests-16%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
 [![Ruff](https://img.shields.io/badge/lint-Ruff-D7FF64?style=flat-square)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/shinjh0380/please-no-smoking?style=flat-square&logo=github)](https://github.com/shinjh0380/please-no-smoking/releases/latest)
@@ -37,6 +37,9 @@
 | 드래그 이동 / 리사이즈 | 오버레이 창을 마우스로 이동하고 크기 조절 가능 |
 | 설정 복귀 | 우클릭 → 설정으로 돌아가기 / 종료 |
 | 입력 검증 | 미래 날짜·0 이하 값 입력 시 오류 메시지 표시 |
+| 데이터 저장 / 자동 시작 | 마지막 입력값을 자동 저장, 재실행 시 복원 |
+| 절약 금액 / 개비 표시 | 오버레이에 절약한 금액(원)과 안 피운 개비 수 실시간 표시 |
+| 컨텍스트 메뉴 다크 테마 | 우클릭 메뉴에 다크 테마 적용 |
 
 ---
 
@@ -51,7 +54,7 @@
 또는 직접 링크:
 
 ```
-https://github.com/shinjh0380/please-no-smoking/releases/download/v0.2.0/please-no-smoking-v0.2.0-windows-x64.zip
+https://github.com/shinjh0380/please-no-smoking/releases/download/v0.3.0/please-no-smoking-v0.3.0-windows-x64.zip
 ```
 
 ### 2단계 — 압축 해제
@@ -147,10 +150,12 @@ please-no-smoking/
 │   ├── window.py             # PySide6 메인 윈도우
 │   └── services/
 │       ├── __init__.py
-│       └── quit_tracker.py   # 핵심 계산 로직 (validate_input, calculate_stats)
+│       ├── quit_tracker.py   # 핵심 계산 로직 (validate_input, calculate_stats)
+│       └── persistence.py    # 입력값 저장/복원 (JSON)
 ├── tests/
 │   ├── test_quit_tracker.py  # 도메인 로직 단위 테스트
-│   └── test_window.py        # pytest-qt 위젯 테스트
+│   ├── test_window.py        # pytest-qt 위젯 테스트
+│   └── test_persistence.py   # 저장/복원 단위 테스트
 ├── pyproject.toml
 └── uv.lock
 ```
@@ -164,7 +169,7 @@ please-no-smoking/
 ```
 app/window.py          (UI 레이어)
        │
-       │  SmokingInput 생성
+       │  SmokingInput 생성 / 저장
        ▼
 app/services/quit_tracker.py  (도메인 레이어)
   validate_input()   ← ValueError 발생 시 window가 오류 메시지 표시
@@ -174,6 +179,10 @@ app/services/quit_tracker.py  (도메인 레이어)
 app/models.py          (데이터 모델)
   @dataclass SmokingInput
   @dataclass SmokingStats
+
+app/services/persistence.py   (영속성 레이어)
+  save_input()       ← SmokingInput을 JSON으로 저장
+  load_input()       → 저장된 SmokingInput 복원 (없으면 None)
 ```
 
 - `quit_tracker.py`는 Qt에 의존하지 않아 단독 단위 테스트가 가능합니다
@@ -199,6 +208,12 @@ tests/test_window.py         4개 케이스
   - "금연 시작" 클릭 후 오버레이 창 표시 및 경과일 확인
   - 미래 날짜 입력 시 오류 메시지 표시
   - 상태 메시지 초기값 확인
+
+tests/test_persistence.py    4개 케이스
+  - 저장 후 복원 (happy path)
+  - 파일 없을 때 None 반환
+  - 손상된 JSON 처리
+  - 저장 경로 격리 (tmp_path 사용)
 ```
 
 ```bash
