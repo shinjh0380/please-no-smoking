@@ -55,7 +55,7 @@
 또는 직접 링크:
 
 ```
-https://github.com/shinjh0380/please-no-smoking/releases/download/v0.4.0/please-no-smoking-v0.4.0-windows-x64.zip
+https://github.com/shinjh0380/please-no-smoking/releases/download/v0.4.1/please-no-smoking-v0.4.1-windows-x64.zip
 ```
 
 ### 2단계 — 압축 해제
@@ -131,7 +131,7 @@ uv run mypy app/
 
 ```bash
 # onedir 빌드 (권장)
-uv run pyinstaller --onedir app/main.py --name please-no-smoking
+uv run pyinstaller --onedir --windowed app/main.py --name please-no-smoking
 
 # 빌드 결과물 위치
 dist/please-no-smoking/please-no-smoking.exe  # Windows

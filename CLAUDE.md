@@ -93,5 +93,5 @@ uv run ruff format app/ tests/
 uv run mypy app/
 
 # Package (onedir, first pass)
-uv run pyinstaller --onedir app/main.py --name please-no-smoking
+uv run pyinstaller --onedir --windowed app/main.py --name please-no-smoking
 ```
