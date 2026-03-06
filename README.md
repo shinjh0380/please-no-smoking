@@ -9,6 +9,7 @@
 [![Tests](https://img.shields.io/badge/tests-11%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
 [![Ruff](https://img.shields.io/badge/lint-Ruff-D7FF64?style=flat-square)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/shinjh0380/please-no-smoking?style=flat-square&logo=github)](https://github.com/shinjh0380/please-no-smoking/releases/latest)
 
 </div>
 
@@ -36,7 +37,41 @@
 
 ---
 
-## 실행 방법
+## 다운로드 및 실행 (Windows)
+
+> Python 설치 없이 바로 실행할 수 있는 빌드 패키지를 제공합니다.
+
+### 1단계 — 다운로드
+
+[**최신 릴리즈 페이지**](https://github.com/shinjh0380/please-no-smoking/releases/latest)에서 `please-no-smoking-vX.X.X-windows-x64.zip`을 다운받습니다.
+
+또는 직접 링크:
+
+```
+https://github.com/shinjh0380/please-no-smoking/releases/download/v0.1.0/please-no-smoking-v0.1.0-windows-x64.zip
+```
+
+### 2단계 — 압축 해제
+
+다운받은 zip 파일을 원하는 폴더에 압축 해제합니다.
+
+```
+please-no-smoking/
+├── please-no-smoking.exe   ← 이 파일을 실행하세요
+├── _internal/              (런타임 라이브러리, 삭제 금지)
+└── ...
+```
+
+### 3단계 — 실행
+
+`please-no-smoking.exe`를 더블클릭하면 앱이 실행됩니다.
+
+> **Windows Defender 경고가 뜨는 경우:** "추가 정보" → "실행"을 클릭하면 됩니다.
+> (코드서명 인증서가 없어 발생하는 경고이며, 악성 코드가 아닙니다.)
+
+---
+
+## 소스에서 직접 실행 (개발자용)
 
 ### 요구 사항
 
