@@ -1,26 +1,36 @@
 from __future__ import annotations
 
 from datetime import date
+from enum import Enum, auto
 
-from PySide6.QtCore import QDate, QPoint, Qt
+from PySide6.QtCore import QDate, QPoint, QRect, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QDateEdit,
     QFormLayout,
-    QHBoxLayout,
     QLabel,
     QMainWindow,
     QPushButton,
-    QSizeGrip,
     QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
 from app.models import SmokingInput, SmokingStats
-from app.services.persistence import save_input
+from app.services.persistence import load_geometry, save_geometry, save_input
 from app.services.quit_tracker import calculate_stats, validate_input
+
+
+class _ResizeEdge(Enum):
+    NONE = auto()
+    TOP_LEFT = auto()
+    TOP_RIGHT = auto()
+    BOTTOM_LEFT = auto()
+    BOTTOM_RIGHT = auto()
+
+
+_CORNER_SIZE = 16
 
 
 class OverlayWindow(QWidget):
@@ -28,6 +38,9 @@ class OverlayWindow(QWidget):
         super().__init__()
         self._main_window = main_window
         self._drag_pos: QPoint | None = None
+        self._resize_edge = _ResizeEdge.NONE
+        self._resize_origin: QRect | None = None
+        self._resize_mouse_origin: QPoint | None = None
 
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
@@ -35,9 +48,16 @@ class OverlayWindow(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet("background-color: black;")
-        self.resize(320, 220)
+        self.setMinimumSize(200, 120)
+        self.setMouseTracking(True)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
+
+        geom = load_geometry()
+        if geom:
+            self.setGeometry(geom["x"], geom["y"], geom["w"], geom["h"])
+        else:
+            self.resize(320, 220)
 
         self._label = QLabel(f"금연 {stats.days_quit}일차")
         self._label.setObjectName("overlay_label")
@@ -55,20 +75,12 @@ class OverlayWindow(QWidget):
         self._label_cigs.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._label_cigs.setStyleSheet("color: white; font-size: 14px;")
 
-        size_grip = QSizeGrip(self)
-
-        bottom_row = QHBoxLayout()
-        bottom_row.addStretch()
-        bottom_row.addWidget(size_grip)
-        bottom_row.setContentsMargins(0, 0, 0, 0)
-
         root = QVBoxLayout(self)
         root.setSpacing(2)
         root.addWidget(self._label)
         root.addWidget(self._label_money)
         root.addWidget(self._label_cigs)
-        root.addLayout(bottom_row)
-        root.setContentsMargins(12, 12, 4, 4)
+        root.setContentsMargins(12, 12, 12, 12)
 
     def _show_context_menu(self, pos: QPoint) -> None:
         from PySide6.QtWidgets import QMenu
@@ -95,23 +107,87 @@ class OverlayWindow(QWidget):
         menu.exec(self.mapToGlobal(pos))
 
     def _go_back(self) -> None:
+        geo = self.geometry()
+        save_geometry(geo.x(), geo.y(), geo.width(), geo.height())
         self._main_window.show()
         self.close()
 
+    def _edge_at(self, pos: QPoint) -> _ResizeEdge:
+        x, y, w, h = pos.x(), pos.y(), self.width(), self.height()
+        c = _CORNER_SIZE
+        if x < c and y < c:
+            return _ResizeEdge.TOP_LEFT
+        if x > w - c and y < c:
+            return _ResizeEdge.TOP_RIGHT
+        if x < c and y > h - c:
+            return _ResizeEdge.BOTTOM_LEFT
+        if x > w - c and y > h - c:
+            return _ResizeEdge.BOTTOM_RIGHT
+        return _ResizeEdge.NONE
+
+    def _update_cursor(self, edge: _ResizeEdge) -> None:
+        if edge in (_ResizeEdge.TOP_LEFT, _ResizeEdge.BOTTOM_RIGHT):
+            self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+        elif edge in (_ResizeEdge.TOP_RIGHT, _ResizeEdge.BOTTOM_LEFT):
+            self.setCursor(Qt.CursorShape.SizeBDiagCursor)
+        else:
+            self.unsetCursor()
+
+    def _do_resize(self, global_pos: QPoint) -> None:
+        assert self._resize_origin is not None
+        assert self._resize_mouse_origin is not None
+        origin = self._resize_origin
+        delta = global_pos - self._resize_mouse_origin
+        dx, dy = delta.x(), delta.y()
+        min_w, min_h = self.minimumWidth(), self.minimumHeight()
+        ox, oy, ow, oh = origin.x(), origin.y(), origin.width(), origin.height()
+
+        if self._resize_edge == _ResizeEdge.BOTTOM_RIGHT:
+            self.setGeometry(ox, oy, max(min_w, ow + dx), max(min_h, oh + dy))
+        elif self._resize_edge == _ResizeEdge.TOP_LEFT:
+            new_w = max(min_w, ow - dx)
+            new_h = max(min_h, oh - dy)
+            self.setGeometry(ox + ow - new_w, oy + oh - new_h, new_w, new_h)
+        elif self._resize_edge == _ResizeEdge.TOP_RIGHT:
+            new_w = max(min_w, ow + dx)
+            new_h = max(min_h, oh - dy)
+            self.setGeometry(ox, oy + oh - new_h, new_w, new_h)
+        elif self._resize_edge == _ResizeEdge.BOTTOM_LEFT:
+            new_w = max(min_w, ow - dx)
+            new_h = max(min_h, oh + dy)
+            self.setGeometry(ox + ow - new_w, oy, new_w, new_h)
+
     def mousePressEvent(self, event) -> None:  # type: ignore[override]
         if event.button() == Qt.MouseButton.LeftButton:
-            self._drag_pos = (
-                event.globalPosition().toPoint() - self.frameGeometry().topLeft()
-            )
+            local_pos = event.position().toPoint()
+            edge = self._edge_at(local_pos)
+            if edge != _ResizeEdge.NONE:
+                self._resize_edge = edge
+                self._resize_origin = self.geometry()
+                self._resize_mouse_origin = event.globalPosition().toPoint()
+            else:
+                self._resize_edge = _ResizeEdge.NONE
+                self._drag_pos = (
+                    event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+                )
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event) -> None:  # type: ignore[override]
-        if self._drag_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
-            self.move(event.globalPosition().toPoint() - self._drag_pos)
+        if event.buttons() & Qt.MouseButton.LeftButton:
+            if self._resize_edge != _ResizeEdge.NONE:
+                self._do_resize(event.globalPosition().toPoint())
+            elif self._drag_pos is not None:
+                self.move(event.globalPosition().toPoint() - self._drag_pos)
+        else:
+            self._update_cursor(self._edge_at(event.position().toPoint()))
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event) -> None:  # type: ignore[override]
-        self._drag_pos = None
+        if event.button() == Qt.MouseButton.LeftButton:
+            geo = self.geometry()
+            save_geometry(geo.x(), geo.y(), geo.width(), geo.height())
+            self._resize_edge = _ResizeEdge.NONE
+            self._drag_pos = None
         super().mouseReleaseEvent(event)
 
 
