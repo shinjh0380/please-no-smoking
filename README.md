@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![PySide6](https://img.shields.io/badge/PySide6-6.7%2B-41CD52?style=flat-square&logo=qt&logoColor=white)](https://doc.qt.io/qtforpython/)
-[![Tests](https://img.shields.io/badge/tests-16%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/tests-20%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
 [![Ruff](https://img.shields.io/badge/lint-Ruff-D7FF64?style=flat-square)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/shinjh0380/please-no-smoking?style=flat-square&logo=github)](https://github.com/shinjh0380/please-no-smoking/releases/latest)
@@ -16,6 +16,10 @@
 ---
 
 ## 소개
+
+> ### *"금연: 가만 있어도 성공하는 세상에서 가장 쉬운 도전."*
+
+<div align="center"><img src="docs/images/nosmoking.jpg" width="480" /></div>
 
 **Please No Smoking**은 금연을 시작한 날짜를 기록하고, 항상 화면에 떠 있는 오버레이 창으로 금연 n일차를 보여주는 가벼운 데스크톱 앱입니다.
 
@@ -34,7 +38,8 @@
 | 흡연량 설정 | 하루 흡연량(개비), 갑당 가격, 갑당 개비 수 |
 | 금연 n일차 오버레이 | "금연 시작" 클릭 시 검은 배경/흰 글씨 오버레이 창 표시 |
 | Always on Top | 오버레이 창이 다른 창 위에 항상 표시 |
-| 드래그 이동 / 리사이즈 | 오버레이 창을 마우스로 이동하고 크기 조절 가능 |
+| 드래그 이동 / 4코너 리사이즈 | 오버레이 창을 마우스로 이동하고 4코너로 크기 조절 가능 |
+| 오버레이 위치·크기 저장 | 창 위치와 크기를 자동 저장, 재실행 시 복원 |
 | 설정 복귀 | 우클릭 → 설정으로 돌아가기 / 종료 |
 | 입력 검증 | 미래 날짜·0 이하 값 입력 시 오류 메시지 표시 |
 | 데이터 저장 / 자동 시작 | 마지막 입력값을 자동 저장, 재실행 시 복원 |
@@ -54,7 +59,7 @@
 또는 직접 링크:
 
 ```
-https://github.com/shinjh0380/please-no-smoking/releases/download/v0.3.0/please-no-smoking-v0.3.0-windows-x64.zip
+https://github.com/shinjh0380/please-no-smoking/releases/download/v0.4.0/please-no-smoking-v0.4.0-windows-x64.zip
 ```
 
 ### 2단계 — 압축 해제
@@ -183,6 +188,8 @@ app/models.py          (데이터 모델)
 app/services/persistence.py   (영속성 레이어)
   save_input()       ← SmokingInput을 JSON으로 저장
   load_input()       → 저장된 SmokingInput 복원 (없으면 None)
+  save_geometry()    ← 오버레이 창 위치·크기를 JSON으로 저장
+  load_geometry()    → 저장된 geometry 복원 (없으면 None)
 ```
 
 - `quit_tracker.py`는 Qt에 의존하지 않아 단독 단위 테스트가 가능합니다
@@ -209,11 +216,15 @@ tests/test_window.py         4개 케이스
   - 미래 날짜 입력 시 오류 메시지 표시
   - 상태 메시지 초기값 확인
 
-tests/test_persistence.py    4개 케이스
+tests/test_persistence.py    8개 케이스
   - 저장 후 복원 (happy path)
   - 파일 없을 때 None 반환
   - 손상된 JSON 처리
   - 저장 경로 격리 (tmp_path 사용)
+  - geometry 저장 후 복원 (happy path)
+  - geometry 파일 없을 때 None 반환
+  - 손상된 geometry JSON 처리
+  - geometry 저장 경로 격리 (tmp_path 사용)
 ```
 
 ```bash
