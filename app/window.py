@@ -35,7 +35,7 @@ class OverlayWindow(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet("background-color: black;")
-        self.resize(320, 240)
+        self.resize(320, 220)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
 
@@ -47,13 +47,13 @@ class OverlayWindow(QWidget):
         self._label_money = QLabel(f"\U0001f4b0 {stats.money_saved:,}원 절약")
         self._label_money.setObjectName("overlay_label_money")
         self._label_money.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._label_money.setStyleSheet("color: white; font-size: 18px;")
+        self._label_money.setStyleSheet("color: white; font-size: 14px;")
 
         cigs_text = f"\U0001f6ac {stats.cigarettes_avoided:,}개비 안 피움"
         self._label_cigs = QLabel(cigs_text)
         self._label_cigs.setObjectName("overlay_label_cigs")
         self._label_cigs.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._label_cigs.setStyleSheet("color: white; font-size: 18px;")
+        self._label_cigs.setStyleSheet("color: white; font-size: 14px;")
 
         size_grip = QSizeGrip(self)
 
@@ -63,6 +63,7 @@ class OverlayWindow(QWidget):
         bottom_row.setContentsMargins(0, 0, 0, 0)
 
         root = QVBoxLayout(self)
+        root.setSpacing(2)
         root.addWidget(self._label)
         root.addWidget(self._label_money)
         root.addWidget(self._label_cigs)
