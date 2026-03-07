@@ -6,12 +6,13 @@ from PySide6.QtWidgets import QApplication
 
 from app.services.persistence import load_input
 from app.services.quit_tracker import calculate_stats
-from app.tray import TrayManager
+from app.tray import TrayManager, create_tray_icon
 from app.window import MainWindow, OverlayWindow
 
 
 def main() -> None:
     app = QApplication(sys.argv)
+    app.setWindowIcon(create_tray_icon())
     app.setQuitOnLastWindowClosed(False)
 
     main_window = MainWindow()
