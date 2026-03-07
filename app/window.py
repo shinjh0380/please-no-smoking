@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from enum import Enum, auto
 
-from PySide6.QtCore import QDate, QPoint, QRect, Qt
+from PySide6.QtCore import QDate, QPoint, QRect, Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -45,10 +45,11 @@ class OverlayWindow(QWidget):
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet("background-color: black;")
-        self.setMinimumSize(200, 120)
+        self.setMinimumSize(250, 120)
         self.setMouseTracking(True)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
@@ -57,7 +58,7 @@ class OverlayWindow(QWidget):
         if geom:
             self.setGeometry(geom["x"], geom["y"], geom["w"], geom["h"])
         else:
-            self.resize(320, 220)
+            self.resize(270, 120)
 
         self._label = QLabel(f"금연 {stats.days_quit}일차")
         self._label.setObjectName("overlay_label")
@@ -110,7 +111,7 @@ class OverlayWindow(QWidget):
         geo = self.geometry()
         save_geometry(geo.x(), geo.y(), geo.width(), geo.height())
         self._main_window.show()
-        self.close()
+        self.hide()
 
     def _edge_at(self, pos: QPoint) -> _ResizeEdge:
         x, y, w, h = pos.x(), pos.y(), self.width(), self.height()
@@ -192,6 +193,8 @@ class OverlayWindow(QWidget):
 
 
 class MainWindow(QMainWindow):
+    overlay_created = Signal(object)
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("금연 추적기")
@@ -270,4 +273,9 @@ class MainWindow(QMainWindow):
 
         self._overlay = OverlayWindow(stats=stats, main_window=self)
         self._overlay.show()
+        self.hide()
+        self.overlay_created.emit(self._overlay)
+
+    def closeEvent(self, event) -> None:  # type: ignore[override]
+        event.ignore()
         self.hide()

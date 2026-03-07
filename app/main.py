@@ -6,21 +6,28 @@ from PySide6.QtWidgets import QApplication
 
 from app.services.persistence import load_input
 from app.services.quit_tracker import calculate_stats
+from app.tray import TrayManager
 from app.window import MainWindow, OverlayWindow
 
 
 def main() -> None:
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
+
+    main_window = MainWindow()
+    overlay = None
 
     saved = load_input()
     if saved is not None:
         stats = calculate_stats(saved)
-        main_window = MainWindow()
         overlay = OverlayWindow(stats=stats, main_window=main_window)
         overlay.show()
     else:
-        window = MainWindow()
-        window.show()
+        main_window.show()
+
+    tray = TrayManager(main_window, overlay)
+    tray.show()
+    main_window.overlay_created.connect(tray.update_overlay)
 
     sys.exit(app.exec())
 

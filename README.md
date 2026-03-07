@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![PySide6](https://img.shields.io/badge/PySide6-6.7%2B-41CD52?style=flat-square&logo=qt&logoColor=white)](https://doc.qt.io/qtforpython/)
-[![Tests](https://img.shields.io/badge/tests-21%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/tests-29%20passed-brightgreen?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
 [![Ruff](https://img.shields.io/badge/lint-Ruff-D7FF64?style=flat-square)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/shinjh0380/please-no-smoking?style=flat-square&logo=github)](https://github.com/shinjh0380/please-no-smoking/releases/latest)
@@ -26,6 +26,7 @@
 - "금연 시작" 버튼 한 번으로 오버레이 창 실행
 - 검은 배경에 흰 글씨로 금연 경과 일수를 크게 표시
 - 항상 최상위(Always on Top) 창으로 유지
+- **시스템 트레이** 상주: 태스크바에 노출 없이 트레이 아이콘으로 앱 관리
 - 설치 없이 실행 파일 하나로 사용할 수 있습니다
 
 ---
@@ -38,6 +39,7 @@
 | 흡연량 설정 | 하루 흡연량(개비), 갑당 가격, 갑당 개비 수 |
 | 금연 n일차 오버레이 | "금연 시작" 클릭 시 검은 배경/흰 글씨 오버레이 창 표시 |
 | 오버레이 위치·크기 저장 | 창 위치와 크기를 자동 저장, 재실행 시 복원 |
+| 시스템 트레이 | 트레이 아이콘 우클릭: 설정, 오버레이 토글, 종료 / 더블클릭: 오버레이 표시·숨기기 |
 | 설정 복귀 | 오버레이 창에서 우클릭 → 설정으로 돌아가기 / 종료 |
 | 데이터 저장 / 자동 시작 | 마지막 입력값을 자동 저장, 재실행 시 복원 |
 | 절약 금액 / 개비 표시 | 오버레이에 절약한 금액(원)과 안 피운 개비 수 실시간 표시 |
@@ -55,7 +57,7 @@
 또는 직접 링크:
 
 ```
-https://github.com/shinjh0380/please-no-smoking/releases/download/v0.4.1/please-no-smoking-v0.4.1-windows-x64.zip
+https://github.com/shinjh0380/please-no-smoking/releases/download/v0.5.0/please-no-smoking-v0.5.0-windows-x64.zip
 ```
 
 ### 2단계 — 압축 해제
@@ -148,6 +150,7 @@ please-no-smoking/
 │   ├── __init__.py
 │   ├── main.py               # 앱 진입점
 │   ├── models.py             # SmokingInput, SmokingStats 데이터 클래스
+│   ├── tray.py               # TrayManager, 트레이 아이콘 생성
 │   ├── window.py             # PySide6 메인 윈도우
 │   └── services/
 │       ├── __init__.py
@@ -168,7 +171,19 @@ please-no-smoking/
 비즈니스 로직과 UI를 명확하게 분리합니다.
 
 ```
+app/main.py            (진입점)
+  setQuitOnLastWindowClosed(False)
+  TrayManager 생성 / overlay_created 시그널 연결
+       │
+       ▼
+app/tray.py            (트레이 레이어)
+  TrayManager        ← QSystemTrayIcon 관리, 컨텍스트 메뉴, 더블클릭 토글
+  create_tray_icon() → QPainter로 금연 심볼 QIcon 생성
+       │
+       ▼
 app/window.py          (UI 레이어)
+  MainWindow         ← overlay_created Signal 발행, closeEvent → hide
+  OverlayWindow      ← Qt.Tool 플래그로 태스크바 숨김
        │
        │  SmokingInput 생성 / 저장
        ▼
@@ -221,6 +236,16 @@ tests/test_persistence.py    8개 케이스
   - geometry 파일 없을 때 None 반환
   - 손상된 geometry JSON 처리
   - geometry 저장 경로 격리 (tmp_path 사용)
+
+tests/test_tray.py           8개 케이스
+  - 트레이 아이콘 생성 확인
+  - TrayManager 생성 확인
+  - 컨텍스트 메뉴 항목(설정, 오버레이 토글, 종료) 확인
+  - 설정 창 표시 동작
+  - 오버레이 표시/숨기기 토글
+  - overlay=None 시 토글 안전 처리
+  - update_overlay() 참조 갱신
+  - CI headless 시 자동 skip
 
 tests/test_packaging.py      1개 케이스
   - spec 파일 console=False 검증 (콘솔창 회귀 방지)
