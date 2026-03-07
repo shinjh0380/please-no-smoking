@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes
 from datetime import date
 from enum import Enum, auto
 
@@ -82,6 +83,19 @@ class OverlayWindow(QWidget):
         root.addWidget(self._label_money)
         root.addWidget(self._label_cigs)
         root.setContentsMargins(12, 12, 12, 12)
+
+    def showEvent(self, event) -> None:  # type: ignore[override]
+        super().showEvent(event)
+        self._remove_taskbar_entry()
+
+    def _remove_taskbar_entry(self) -> None:
+        GWL_EXSTYLE = -20
+        WS_EX_APPWINDOW = 0x00040000
+        WS_EX_TOOLWINDOW = 0x00000080
+        hwnd = int(self.winId())
+        style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        style = (style & ~WS_EX_APPWINDOW) | WS_EX_TOOLWINDOW
+        ctypes.windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style)
 
     def _show_context_menu(self, pos: QPoint) -> None:
         from PySide6.QtWidgets import QMenu
