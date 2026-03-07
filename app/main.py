@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes
 import sys
 
 from PySide6.QtWidgets import QApplication
@@ -11,6 +12,11 @@ from app.window import MainWindow, OverlayWindow
 
 
 def main() -> None:
+    if sys.platform == "win32":
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            "please-no-smoking"
+        )
+
     app = QApplication(sys.argv)
     app.setWindowIcon(create_tray_icon())
     app.setQuitOnLastWindowClosed(False)
