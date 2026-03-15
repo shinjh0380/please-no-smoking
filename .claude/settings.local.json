@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "mcp__promptarchitect-mcp__get_auto_refine_status",
-      "Bash(uv sync:*)",
-      "Bash(uv run:*)"
-    ]
-  }
-}

@@ -213,6 +213,7 @@ smoking_data.json
 # Editor
 .vscode/
 
-# Claude Code (local/ephemeral files — tracked only in dev branch)
-.claude/settings.local.json
-.claude/plans/
+# Claude Code (tracked only in dev branch)
+.claude/
+CLAUDE.md
+.pre-commit-config.yaml
