@@ -18,7 +18,7 @@
 ## 소개
 <div align="center">
   <img src="docs/images/nosmoking.jpg" width="480" />
-  <p><em>금연: 가만 있어도 성공하는 세상에서 가장 쉬운 도전.</em></p>
+  <p><em>금연, 가만 있어도 성공하는 세상에서 가장 쉬운 도전.</em></p>
 </div>
 
 **Please No Smoking** 은 금연을 시작한 날짜를 기록하고, 항상 화면에 떠 있는 오버레이 창으로 금연 n일차를 보여주는 가벼운 데스크톱 앱입니다.
