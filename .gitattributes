@@ -1,0 +1,12 @@
+# Merge strategy for files that differ between main and dev.
+# On main, these files are either absent or ignored.
+# Using merge=ours prevents dev→main merges from reintroducing them.
+#
+# Requires one-time setup:
+#   git config merge.ours.driver true
+
+.gitignore               merge=ours
+.gitattributes           merge=ours
+CLAUDE.md                merge=ours
+.pre-commit-config.yaml  merge=ours
+.claude/                 merge=ours
