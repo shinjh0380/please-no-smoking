@@ -3,7 +3,9 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QSystemTrayIcon
 
-from app.models import SmokingStats
+from datetime import date
+
+from app.models import SmokingInput, SmokingStats
 from app.tray import TrayManager, create_tray_icon
 from app.window import MainWindow, OverlayWindow
 
@@ -22,6 +24,15 @@ def _make_stats(days: int = 10) -> SmokingStats:
         cigarettes_avoided=cigs,
         packs_avoided=cigs / 20,
         money_saved=days * 4500,
+    )
+
+
+def _make_input() -> SmokingInput:
+    return SmokingInput(
+        quit_date=date(2025, 1, 1),
+        cigarettes_per_day=20,
+        price_per_pack=4500,
+        cigarettes_per_pack=20,
     )
 
 
@@ -63,7 +74,7 @@ class TestTrayManager:
         window = MainWindow()
         qtbot.addWidget(window)
 
-        overlay = OverlayWindow(stats=_make_stats(), main_window=window)
+        overlay = OverlayWindow(stats=_make_stats(), smoking_input=_make_input(), main_window=window)
         qtbot.addWidget(overlay)
         overlay.hide()
 
@@ -77,7 +88,7 @@ class TestTrayManager:
         window = MainWindow()
         qtbot.addWidget(window)
 
-        overlay = OverlayWindow(stats=_make_stats(5), main_window=window)
+        overlay = OverlayWindow(stats=_make_stats(5), smoking_input=_make_input(), main_window=window)
         qtbot.addWidget(overlay)
         overlay.show()
 
@@ -99,7 +110,7 @@ class TestTrayManager:
         qtbot.addWidget(window)
         tray = TrayManager(main_window=window, overlay=None)
 
-        overlay = OverlayWindow(stats=_make_stats(1), main_window=window)
+        overlay = OverlayWindow(stats=_make_stats(1), smoking_input=_make_input(), main_window=window)
         qtbot.addWidget(overlay)
 
         tray.update_overlay(overlay)

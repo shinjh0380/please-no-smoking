@@ -27,7 +27,7 @@ def main() -> None:
     saved = load_input()
     if saved is not None:
         stats = calculate_stats(saved)
-        overlay = OverlayWindow(stats=stats, main_window=main_window)
+        overlay = OverlayWindow(stats=stats, smoking_input=saved, main_window=main_window)
         overlay.show()
     else:
         main_window.show()

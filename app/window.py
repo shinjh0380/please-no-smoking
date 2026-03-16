@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import ctypes
-from datetime import date
+from datetime import date, datetime, timedelta
 from enum import Enum, auto
 
-from PySide6.QtCore import QDate, QPoint, QRect, Qt, Signal
+from PySide6.QtCore import QDate, QPoint, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -35,9 +35,11 @@ _CORNER_SIZE = 16
 
 
 class OverlayWindow(QWidget):
-    def __init__(self, stats: SmokingStats, main_window: MainWindow) -> None:
+    def __init__(self, stats: SmokingStats, smoking_input: SmokingInput, main_window: MainWindow) -> None:
         super().__init__()
         self._main_window = main_window
+        self._smoking_input = smoking_input
+        self._current_date = date.today()
         self._drag_pos: QPoint | None = None
         self._resize_edge = _ResizeEdge.NONE
         self._resize_origin: QRect | None = None
@@ -83,6 +85,40 @@ class OverlayWindow(QWidget):
         root.addWidget(self._label_money)
         root.addWidget(self._label_cigs)
         root.setContentsMargins(12, 12, 12, 12)
+
+        self._midnight_timer = QTimer(self)
+        self._midnight_timer.setSingleShot(True)
+        self._midnight_timer.timeout.connect(self._on_midnight)
+
+        self._date_check_timer = QTimer(self)
+        self._date_check_timer.timeout.connect(self._check_date_change)
+        self._date_check_timer.start(10 * 60 * 1000)  # 10분
+
+        self._schedule_midnight_update()
+
+    def _schedule_midnight_update(self) -> None:
+        now = datetime.now()
+        next_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        ms_until_midnight = int((next_midnight - now).total_seconds() * 1000)
+        self._midnight_timer.start(ms_until_midnight)
+
+    def _on_midnight(self) -> None:
+        self._update_stats()
+
+    def _check_date_change(self) -> None:
+        if date.today() != self._current_date:
+            self._update_stats()
+
+    def _update_stats(self) -> None:
+        today = date.today()
+        if today == self._current_date:
+            return
+        self._current_date = today
+        stats = calculate_stats(self._smoking_input)
+        self._label.setText(f"금연 {stats.days_quit}일차")
+        self._label_money.setText(f"\U0001f4b0 {stats.money_saved:,}원 절약")
+        self._label_cigs.setText(f"\U0001f6ac {stats.cigarettes_avoided:,}개비 안 피움")
+        self._schedule_midnight_update()
 
     def showEvent(self, event) -> None:  # type: ignore[override]
         super().showEvent(event)
@@ -285,7 +321,7 @@ class MainWindow(QMainWindow):
         save_input(validated)
         stats = calculate_stats(validated)
 
-        self._overlay = OverlayWindow(stats=stats, main_window=self)
+        self._overlay = OverlayWindow(stats=stats, smoking_input=validated, main_window=self)
         self._overlay.show()
         self.hide()
         self.overlay_created.emit(self._overlay)
